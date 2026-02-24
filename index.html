@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Word Search Challenge</title>
+
+<style>
+body{
+    font-family: Arial, sans-serif;
+    text-align:center;
+    background:#f4f6f9;
+}
+
+#grid{
+    display:grid;
+    grid-template-columns: repeat(10,40px);
+    gap:3px;
+    justify-content:center;
+    margin-top:20px;
+}
+
+.cell{
+    width:40px;
+    height:40px;
+    background:white;
+    border:1px solid #ccc;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    font-weight:bold;
+    cursor:pointer;
+    user-select:none;
+}
+
+.cell.selected{
+    background:#87cefa;
+}
+
+.cell.found{
+    background:#4CAF50;
+    color:white;
+}
+</style>
+</head>
+<body>
+
+<h1>Word Search Challenge</h1>
+<p>Temukan kata tersembunyi di dalam kotak huruf!</p>
+
+<div id="grid"></div>
+
+<script>
+
+const words = ["RAMADHAN","FASTING","IFTAR","PRAY","MOSQUE","RUANGGURU","SAHUR","EAT","DRINK","HOLY"];
+const gridSize = 10;
+const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+let gridArray = [];
+let selectedCells = [];
+let foundWords = [];
+
+const grid = document.getElementById("grid");
+
+function createEmptyGrid(){
+    for(let i=0;i<gridSize;i++){
+        gridArray[i]=[];
+        for(let j=0;j<gridSize;j++){
+            gridArray[i][j]="";
+        }
+    }
+}
+
+function placeWord(word){
+    let placed=false;
+
+    while(!placed){
+        let direction = Math.random() > 0.5 ? "horizontal" : "vertical";
+        let row = Math.floor(Math.random()*gridSize);
+        let col = Math.floor(Math.random()*gridSize);
+
+        if(direction==="horizontal"){
+            if(col + word.length <= gridSize){
+                let canPlace=true;
+                for(let i=0;i<word.length;i++){
+                    if(gridArray[row][col+i]!=="" &&
+                       gridArray[row][col+i]!==word[i]){
+                        canPlace=false;
+                    }
+                }
+                if(canPlace){
+                    for(let i=0;i<word.length;i++){
+                        gridArray[row][col+i]=word[i];
+                    }
+                    placed=true;
+                }
+            }
+        }
+
+        if(direction==="vertical"){
+            if(row + word.length <= gridSize){
+                let canPlace=true;
+                for(let i=0;i<word.length;i++){
+                    if(gridArray[row+i][col]!=="" &&
+                       gridArray[row+i][col]!==word[i]){
+                        canPlace=false;
+                    }
+                }
+                if(canPlace){
+                    for(let i=0;i<word.length;i++){
+                        gridArray[row+i][col]=word[i];
+                    }
+                    placed=true;
+                }
+            }
+        }
+    }
+}
+
+function fillRandomLetters(){
+    for(let i=0;i<gridSize;i++){
+        for(let j=0;j<gridSize;j++){
+            if(gridArray[i][j]===""){
+                gridArray[i][j]=letters[Math.floor(Math.random()*letters.length)];
+            }
+        }
+    }
+}
+
+function renderGrid(){
+    for(let i=0;i<gridSize;i++){
+        for(let j=0;j<gridSize;j++){
+            const cell=document.createElement("div");
+            cell.classList.add("cell");
+            cell.textContent=gridArray[i][j];
+            cell.dataset.row=i;
+            cell.dataset.col=j;
+
+            cell.addEventListener("click",()=>selectCell(cell));
+            grid.appendChild(cell);
+        }
+    }
+}
+
+function selectCell(cell){
+    cell.classList.toggle("selected");
+    selectedCells.push(cell);
+
+    const selectedWord = selectedCells.map(c=>c.textContent).join("");
+
+    if(words.includes(selectedWord)){
+        selectedCells.forEach(c=>{
+            c.classList.remove("selected");
+            c.classList.add("found");
+        });
+        foundWords.push(selectedWord);
+        selectedCells=[];
+    }
+
+    if(foundWords.length===words.length){
+        setTimeout(()=>{
+            alert("🎉 Semua kata ditemukan!");
+        },500);
+    }
+
+    if(selectedCells.length>12){
+        selectedCells.forEach(c=>c.classList.remove("selected"));
+        selectedCells=[];
+    }
+}
+
+createEmptyGrid();
+words.forEach(word=>placeWord(word));
+fillRandomLetters();
+renderGrid();
+
+</script>
+
+</body>
+</html>
