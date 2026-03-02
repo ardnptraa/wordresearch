@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Word Search Challenge</title>
+<title>Word Search Pro</title>
 
 <style>
 body{
@@ -34,25 +34,61 @@ body{
 }
 
 .cell.selected{
-    background:#87cefa;
+    background:#2196F3; /* 🔵 biru saat ditekan */
+    color:white;
 }
 
 .cell.found{
-    background:#4CAF50;
+    background:#E53935; /* 🔴 merah saat benar */
     color:white;
+}
+
+#clueBox{
+    margin-top:25px;
+}
+
+#clueBox ul{
+    list-style:none;
+    padding:0;
+}
+
+#clueBox li{
+    margin:5px 0;
+    font-weight:bold;
+}
+
+.foundWord{
+    text-decoration: line-through;
+    color:#E53935;
 }
 </style>
 </head>
 <body>
 
-<h1>Word Search Challenge</h1>
-<p>Temukan kata tersembunyi di dalam kotak huruf!</p>
+<h1>Word Search Challenge 🔥</h1>
+<p>Temukan kata berdasarkan clue di bawah!</p>
 
 <div id="grid"></div>
 
+<div id="clueBox">
+    <h3>Clue:</h3>
+    <ul id="wordList"></ul>
+</div>
+
 <script>
 
-const words = ["RAMADHAN","FASTING","IFTAR","PRAY","MOSQUE","RUANGGURU","SAHUR","EAT","DRINK","HOLY"];
+const words = [
+    {word:"SUNNY", clue:"Cuaca cerah"},
+    {word:"RAINY", clue:"Cuaca hujan"},
+    {word:"WINDY", clue:"Banyak angin"},
+    {word:"CLOUDY", clue:"Berawan"},
+    {word:"HOT", clue:"Panas"},
+    {word:"COLD", clue:"Dingin"},
+    {word:"SNOWY", clue:"Bersalju"},
+    {word:"FOGGY", clue:"Berkabut"},
+    {word:"STORMY", clue:"Badai"}
+];
+
 const gridSize = 10;
 const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
@@ -61,6 +97,7 @@ let selectedCells = [];
 let foundWords = [];
 
 const grid = document.getElementById("grid");
+const wordList = document.getElementById("wordList");
 
 function createEmptyGrid(){
     for(let i=0;i<gridSize;i++){
@@ -74,45 +111,42 @@ function createEmptyGrid(){
 function placeWord(word){
     let placed=false;
 
+    const directions = [
+        {x:0,y:1},
+        {x:1,y:0},
+        {x:1,y:1},
+        {x:-1,y:1}
+    ];
+
     while(!placed){
-        let direction = Math.random() > 0.5 ? "horizontal" : "vertical";
+        let dir = directions[Math.floor(Math.random()*directions.length)];
         let row = Math.floor(Math.random()*gridSize);
         let col = Math.floor(Math.random()*gridSize);
 
-        if(direction==="horizontal"){
-            if(col + word.length <= gridSize){
-                let canPlace=true;
-                for(let i=0;i<word.length;i++){
-                    if(gridArray[row][col+i]!=="" &&
-                       gridArray[row][col+i]!==word[i]){
-                        canPlace=false;
-                    }
-                }
-                if(canPlace){
-                    for(let i=0;i<word.length;i++){
-                        gridArray[row][col+i]=word[i];
-                    }
-                    placed=true;
-                }
+        let canPlace=true;
+
+        for(let i=0;i<word.length;i++){
+            let newRow = row + dir.x*i;
+            let newCol = col + dir.y*i;
+
+            if(
+                newRow<0 || newRow>=gridSize ||
+                newCol<0 || newCol>=gridSize ||
+                (gridArray[newRow][newCol]!=="" &&
+                 gridArray[newRow][newCol]!==word[i])
+            ){
+                canPlace=false;
+                break;
             }
         }
 
-        if(direction==="vertical"){
-            if(row + word.length <= gridSize){
-                let canPlace=true;
-                for(let i=0;i<word.length;i++){
-                    if(gridArray[row+i][col]!=="" &&
-                       gridArray[row+i][col]!==word[i]){
-                        canPlace=false;
-                    }
-                }
-                if(canPlace){
-                    for(let i=0;i<word.length;i++){
-                        gridArray[row+i][col]=word[i];
-                    }
-                    placed=true;
-                }
+        if(canPlace){
+            for(let i=0;i<word.length;i++){
+                let newRow = row + dir.x*i;
+                let newCol = col + dir.y*i;
+                gridArray[newRow][newCol]=word[i];
             }
+            placed=true;
         }
     }
 }
@@ -135,25 +169,68 @@ function renderGrid(){
             cell.textContent=gridArray[i][j];
             cell.dataset.row=i;
             cell.dataset.col=j;
-
             cell.addEventListener("click",()=>selectCell(cell));
             grid.appendChild(cell);
         }
     }
 }
 
+function renderClues(){
+    words.forEach(w=>{
+        const li=document.createElement("li");
+        li.id=w.word;
+        li.textContent=`${w.word} - ${w.clue}`;
+        wordList.appendChild(li);
+    });
+}
+
+function isStraightLine(cells){
+    if(cells.length < 2) return true;
+
+    let r1 = parseInt(cells[0].dataset.row);
+    let c1 = parseInt(cells[0].dataset.col);
+    let r2 = parseInt(cells[1].dataset.row);
+    let c2 = parseInt(cells[1].dataset.col);
+
+    let rowDiff = r2 - r1;
+    let colDiff = c2 - c1;
+
+    return (
+        rowDiff === 0 ||
+        colDiff === 0 ||
+        Math.abs(rowDiff) === Math.abs(colDiff)
+    );
+}
+
 function selectCell(cell){
-    cell.classList.toggle("selected");
+
+    if(cell.classList.contains("found")) return;
+
+    if(selectedCells.length >= 2){
+        let temp = [...selectedCells, cell];
+        if(!isStraightLine(temp)) return;
+    }
+
+    cell.classList.add("selected");
     selectedCells.push(cell);
 
-    const selectedWord = selectedCells.map(c=>c.textContent).join("");
+    let selectedWord = selectedCells.map(c=>c.textContent).join("");
+    let reversedWord = selectedWord.split("").reverse().join("");
 
-    if(words.includes(selectedWord)){
+    let matchedWord = words.find(w=> 
+        w.word === selectedWord || w.word === reversedWord
+    );
+
+    if(matchedWord){
         selectedCells.forEach(c=>{
             c.classList.remove("selected");
             c.classList.add("found");
         });
-        foundWords.push(selectedWord);
+
+        document.getElementById(matchedWord.word)
+            .classList.add("foundWord");
+
+        foundWords.push(matchedWord.word);
         selectedCells=[];
     }
 
@@ -162,17 +239,13 @@ function selectCell(cell){
             alert("🎉 Semua kata ditemukan!");
         },500);
     }
-
-    if(selectedCells.length>12){
-        selectedCells.forEach(c=>c.classList.remove("selected"));
-        selectedCells=[];
-    }
 }
 
 createEmptyGrid();
-words.forEach(word=>placeWord(word));
+words.forEach(w=>placeWord(w.word));
 fillRandomLetters();
 renderGrid();
+renderClues();
 
 </script>
 
